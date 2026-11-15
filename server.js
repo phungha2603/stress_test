@@ -2,6 +2,7 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { mockRouter } from "./src/mockEndpoint.js";
+import { demoSiteRouter } from "./src/demoSite.js";
 import { stressTestManager, LIMITS } from "./src/stressTester.js";
 import { generateMockPayload } from "./src/mockData.js";
 import {
@@ -16,10 +17,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
 // Demo target endpoint the stress tester hits by default.
 app.use("/api/mock", mockRouter);
+
+// Self-managed demo blog post with a real, rendered comment form — the
+// target used by qa/autofillComment.mjs to QA/stress-test the comment
+// pipeline end-to-end (not just the raw JSON API above).
+app.use("/demo", demoSiteRouter);
 
 app.get("/api/limits", (_req, res) => {
   res.json(LIMITS);

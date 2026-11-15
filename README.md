@@ -52,3 +52,32 @@ lập vào một mock endpoint:
 
 Giới hạn: tối đa 100 link/lần chạy, link trùng tự động loại bỏ, link không phải
 `http(s)` hợp lệ bị bỏ qua và báo rõ trong bản xem trước.
+
+## Demo site tự quản lí + công cụ autofill form (QA/stress-test)
+
+Để kiểm thử **quy trình bình luận thật** (render trang → điền form → submit → trang
+re-render với comment mới) thay vì chỉ gọi JSON API, repo có thêm:
+
+- **Trang blog demo** (`src/demoSite.js`) — `GET /demo/bai-viet-mau`: một bài viết mẫu
+  có sẵn danh sách bình luận + biểu mẫu `#commentform` (comment/name/email/website +
+  checkbox "lưu thông tin"), submit bằng form POST thường như WordPress, dữ liệu lưu
+  trong bộ nhớ (reset qua `POST /demo/bai-viet-mau/comments/reset`).
+- **Công cụ autofill** (`qa/autofillComment.mjs`, dùng Playwright) — mở trình duyệt
+  thật, điền **đúng 3 ô: comment, name, website** (không đụng tới email, không tick ô
+  "lưu thông tin"), rồi chỉ bấm gửi sau khi người chạy xác nhận.
+
+```bash
+npm start                      # chạy server ở terminal khác (cổng 3000)
+npm run qa:autofill -- --count 5 --delay 1200
+```
+
+Các tham số chính: `--url` (mặc định trỏ vào trang demo ở trên), `--count`, `--delay`
+(ms, tuần tự — không bao giờ gửi đồng thời), `--headed` (mở cửa sổ trình duyệt để xem),
+`--name/--website/--comment` (giá trị cố định thay vì sinh ngẫu nhiên), `--yes` (bỏ qua
+bước xác nhận — chỉ nên dùng khi tự động hoá script của chính mình).
+
+An toàn có chủ đích:
+- Mặc định **luôn dừng lại chờ gõ `y`** trước khi gửi bất kỳ request thật nào.
+- Nếu `--url` không phải `localhost`/`127.0.0.1`, công cụ **từ chối chạy** trừ khi thêm
+  `--i-own-this-site` để tự xác nhận đó đúng là site do mình quản lí — công cụ này
+  không nhằm (và không nên dùng) để điền form trên site của bên thứ ba.
