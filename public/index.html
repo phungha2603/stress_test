@@ -15,7 +15,12 @@
     <p class="subtitle">Concurrent request automation · mock payload (name, website, comment) · toàn bộ dữ liệu là dummy</p>
   </header>
 
-  <main class="layout">
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="stress">Stress test (mock)</button>
+    <button class="tab-btn" data-tab="campaign">Comment theo danh sách link</button>
+  </nav>
+
+  <main class="layout tab-panel" id="stressView">
     <section class="panel config-panel">
       <h2>Cấu hình kịch bản</h2>
 
@@ -132,6 +137,126 @@
     </section>
   </main>
 
+  <main class="layout tab-panel" id="campaignView" hidden>
+    <section class="panel config-panel">
+      <h2>Danh sách link &amp; nội dung comment</h2>
+
+      <label class="field">
+        <span>Danh sách link (mỗi dòng 1 link)</span>
+        <textarea id="campaignLinks" rows="8" placeholder="https://client-a.example.com/lien-he&#10;https://client-b.example.com/contact&#10;..."></textarea>
+        <small>Copy cột link từ Google Sheet rồi dán vào đây — sandbox này không gọi trực tiếp Google Sheets được. Chỉ dùng link thuộc các site đã được khách hàng/đối tác đồng ý cho đăng comment thay.</small>
+      </label>
+
+      <label class="field">
+        <span>Name</span>
+        <input id="campaignName" type="text" placeholder="Nguyen Van QA" />
+      </label>
+      <label class="field">
+        <span>Website</span>
+        <input id="campaignWebsite" type="text" placeholder="https://your-domain.example" />
+      </label>
+      <label class="field">
+        <span>Comment</span>
+        <textarea id="campaignComment" rows="3" placeholder="Nội dung comment sẽ gửi tới mỗi link..."></textarea>
+      </label>
+
+      <label class="field">
+        <span>Khoảng cách giữa các lần gửi (ms)</span>
+        <input id="campaignDelay" type="number" min="1500" max="60000" value="2500" />
+        <small>Gửi tuần tự từng link, có độ trễ bắt buộc — không bao giờ gửi đồng thời, để tránh bị xem là autospam.</small>
+      </label>
+
+      <div class="actions">
+        <button id="previewCampaignBtn" class="btn primary">Xem trước &amp; Xác nhận</button>
+        <button id="cancelCampaignBtn" class="btn danger" disabled>Dừng</button>
+      </div>
+
+      <p id="campaignErrorMsg" class="error-msg" hidden></p>
+    </section>
+
+    <section class="panel results-panel">
+      <h2>Tiến trình gửi</h2>
+
+      <div class="progress-wrap">
+        <div class="progress-bar"><div id="campaignProgressFill" class="progress-fill"></div></div>
+        <span id="campaignProgressLabel">0 / 0</span>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-label">Đã gửi</span>
+          <span id="campaignStatSent" class="stat-value">0</span>
+        </div>
+        <div class="stat-card success">
+          <span class="stat-label">Thành công</span>
+          <span id="campaignStatSuccess" class="stat-value">0</span>
+        </div>
+        <div class="stat-card fail">
+          <span class="stat-label">Thất bại</span>
+          <span id="campaignStatFailed" class="stat-value">0</span>
+        </div>
+      </div>
+
+      <h3 class="log-title">Nhật ký gửi theo từng link</h3>
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Status</th>
+              <th>Latency</th>
+              <th>Link</th>
+              <th>Lỗi</th>
+            </tr>
+          </thead>
+          <tbody id="campaignLogBody"></tbody>
+        </table>
+      </div>
+
+      <div class="export-row">
+        <button id="campaignExportJsonBtn" class="btn ghost" disabled>Export JSON</button>
+        <button id="campaignExportCsvBtn" class="btn ghost" disabled>Export CSV</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="confirmModal" class="modal-overlay" hidden>
+    <div class="modal-box">
+      <h3>Xác nhận trước khi gửi comment thật</h3>
+      <p class="modal-hint">
+        Hệ thống sẽ gửi tuần tự (không đồng thời) tới từng link dưới đây, có độ trễ giữa các lần gửi.
+        Vui lòng kiểm tra kỹ danh sách và nội dung trước khi xác nhận.
+      </p>
+
+      <div class="modal-section">
+        <strong><span id="modalLinkCount">0</span> link sẽ nhận comment:</strong>
+        <ul id="modalLinkList" class="modal-link-list"></ul>
+        <p id="modalInvalidNote" class="error-msg" hidden></p>
+      </div>
+
+      <div class="modal-section">
+        <strong>Nội dung sẽ gửi tới mỗi link:</strong>
+        <pre id="modalPayloadPreview"></pre>
+      </div>
+
+      <label class="modal-checkbox">
+        <input type="checkbox" id="confirmAuthCheckbox" />
+        <span>Tôi xác nhận đã được khách hàng/đối tác đồng ý cho đăng comment lên các link này.</span>
+      </label>
+
+      <label class="field">
+        <span>Nhập chính xác cụm từ <code id="confirmPhraseLabel">XAC NHAN GUI</code> để xác nhận gửi</span>
+        <input id="confirmPhraseInput" type="text" autocomplete="off" />
+      </label>
+
+      <div class="actions">
+        <button id="modalCancelBtn" class="btn ghost">Huỷ</button>
+        <button id="modalConfirmBtn" class="btn primary" disabled>Xác nhận &amp; Gửi</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
+  <script src="campaign.js"></script>
 </body>
 </html>
