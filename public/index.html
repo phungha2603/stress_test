@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stress Test · Comment Endpoints</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <h1>Stress Test — Comment Endpoints</h1>
+    </div>
+    <p class="subtitle">Concurrent request automation · mock payload (name, website, comment) · toàn bộ dữ liệu là dummy</p>
+  </header>
+
+  <main class="layout">
+    <section class="panel config-panel">
+      <h2>Cấu hình kịch bản</h2>
+
+      <label class="field">
+        <span>Target URL</span>
+        <input id="targetUrl" type="text" value="/api/mock/comments?minLatency=40&maxLatency=250&failureRate=0.05" />
+        <small>Mặc định trỏ vào mock comment endpoint có sẵn trong app này (name, website, comment).</small>
+      </label>
+
+      <div class="field-row">
+        <label class="field">
+          <span>Tổng số requests</span>
+          <input id="totalRequests" type="number" min="1" max="20000" value="200" />
+        </label>
+        <label class="field">
+          <span>Concurrency (song song)</span>
+          <input id="concurrency" type="number" min="1" max="200" value="20" />
+        </label>
+      </div>
+
+      <label class="field">
+        <span>Timeout mỗi request (ms)</span>
+        <input id="timeoutMs" type="number" min="100" max="60000" value="5000" />
+      </label>
+
+      <div class="presets">
+        <span>Preset nhanh:</span>
+        <button class="chip" data-total="50" data-conc="5">Light · 50/5</button>
+        <button class="chip" data-total="300" data-conc="30">Medium · 300/30</button>
+        <button class="chip" data-total="1000" data-conc="50">Heavy · 1000/50</button>
+      </div>
+
+      <div class="actions">
+        <button id="startBtn" class="btn primary">Bắt đầu stress test</button>
+        <button id="cancelBtn" class="btn danger" disabled>Dừng</button>
+        <button id="resetMockBtn" class="btn ghost">Reset mock store</button>
+      </div>
+
+      <p id="errorMsg" class="error-msg" hidden></p>
+
+      <details class="sample-payload">
+        <summary>Xem mẫu payload giả lập sẽ được gửi</summary>
+        <pre id="samplePayload">{}</pre>
+      </details>
+    </section>
+
+    <section class="panel results-panel">
+      <h2>Kết quả theo thời gian thực</h2>
+
+      <div class="progress-wrap">
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        <span id="progressLabel">0 / 0</span>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <span class="stat-label">Đã gửi</span>
+          <span id="statSent" class="stat-value">0</span>
+        </div>
+        <div class="stat-card success">
+          <span class="stat-label">Thành công</span>
+          <span id="statSuccess" class="stat-value">0</span>
+        </div>
+        <div class="stat-card fail">
+          <span class="stat-label">Thất bại</span>
+          <span id="statFailed" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">RPS</span>
+          <span id="statRps" class="stat-value">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Latency avg</span>
+          <span id="statAvg" class="stat-value">0 ms</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">p95 / p99</span>
+          <span id="statP95" class="stat-value">0 / 0 ms</span>
+        </div>
+      </div>
+
+      <div class="charts">
+        <div class="chart-box">
+          <h3>Latency theo request (ms)</h3>
+          <canvas id="latencyChart" height="180"></canvas>
+        </div>
+        <div class="chart-box">
+          <h3>Phân bố status</h3>
+          <canvas id="statusChart" height="180"></canvas>
+        </div>
+      </div>
+
+      <h3 class="log-title">Nhật ký request gần nhất</h3>
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Status</th>
+              <th>Latency</th>
+              <th>Name (dummy)</th>
+              <th>Website (dummy)</th>
+              <th>Comment (dummy)</th>
+            </tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+
+      <div class="export-row">
+        <button id="exportJsonBtn" class="btn ghost" disabled>Export JSON</button>
+        <button id="exportCsvBtn" class="btn ghost" disabled>Export CSV</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

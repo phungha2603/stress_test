@@ -1,0 +1,14 @@
+{
+  "name": "stress-test-comment-endpoints",
+  "version": "1.0.0",
+  "description": "Stress testing tool for comment-form endpoints (name, website, comment) using concurrent request automation and mock payload data.",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
