@@ -1,3 +1,9 @@
+// Wrapped in an IIFE so this file's top-level declarations (starting with
+// `el`) never collide with app.js's identically-named ones — both are
+// loaded as classic scripts sharing one global scope, and a duplicate
+// top-level `const`/`let` across them throws a SyntaxError that silently
+// kills this entire file.
+(function () {
 const el = (id) => document.getElementById(id);
 
 const campaignLinks = el("campaignLinks");
@@ -257,3 +263,4 @@ function csvEscape(value) {
 }
 
 loadCampaignLimits();
+})();
