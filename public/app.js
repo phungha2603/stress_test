@@ -309,6 +309,15 @@ function csvEscape(value) {
   return `"${str.replace(/"/g, '""')}"`;
 }
 
+document.querySelectorAll(".tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    el("stressView").hidden = btn.dataset.tab !== "stress";
+    el("campaignView").hidden = btn.dataset.tab !== "campaign";
+  });
+});
+
 loadSamplePayload();
 window.addEventListener("resize", () => {
   if (latestSnapshot) {

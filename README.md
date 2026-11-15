@@ -31,3 +31,24 @@ Mở `http://localhost:3000`.
 Đổi "Target URL" trong UI sang endpoint comment thật cần kiểm thử (phải nhận JSON
 `{ name, website, comment }` qua POST). Lưu ý mạng của sandbox này có thể chặn các host
 ngoài danh sách cho phép — endpoint cùng container hoặc đã được whitelist mới gọi được.
+
+## Tab "Comment theo danh sách link"
+
+Dành cho việc **QA/kiểm thử form comment trên nhiều site thật** (của mình hoặc của
+khách hàng/đối tác đã đồng ý), khác với tab stress-test ở trên vốn chỉ gửi tải giả
+lập vào một mock endpoint:
+
+1. Dán danh sách link (mỗi dòng 1 link) — copy tay từ Google Sheet, vì sandbox này
+   không gọi trực tiếp `docs.google.com` được.
+2. Nhập 1 bộ `name` / `website` / `comment` dùng chung cho cả danh sách.
+3. Bấm **Xem trước & Xác nhận** — hệ thống lọc link hợp lệ/trùng, hiện bản xem trước
+   đầy đủ (danh sách link + nội dung sẽ gửi).
+4. Phải tick xác nhận có quyền đăng thay + gõ đúng cụm xác nhận (`XAC NHAN GUI`) mới
+   bấm được **Xác nhận & Gửi**. Không có bước này, campaign chỉ ở trạng thái
+   `pending_confirmation` và không gửi bất cứ request nào.
+5. Khi đã xác nhận, request được gửi **tuần tự, có độ trễ bắt buộc** giữa mỗi lần gửi
+   (mặc định 2500ms, sàn 1500ms) — không bao giờ gửi đồng thời/hàng loạt, để tránh
+   hành vi giống autospam.
+
+Giới hạn: tối đa 100 link/lần chạy, link trùng tự động loại bỏ, link không phải
+`http(s)` hợp lệ bị bỏ qua và báo rõ trong bản xem trước.
