@@ -72,9 +72,15 @@ npm run qa:autofill -- --count 5 --delay 1200
 ```
 
 Các tham số chính: `--url` (mặc định trỏ vào trang demo ở trên), `--count`, `--delay`
-(ms, tuần tự — không bao giờ gửi đồng thời), `--headed` (mở cửa sổ trình duyệt để xem),
-`--name/--website/--comment` (giá trị cố định thay vì sinh ngẫu nhiên), `--yes` (bỏ qua
-bước xác nhận — chỉ nên dùng khi tự động hoá script của chính mình).
+(ms, tuần tự — không bao giờ gửi đồng thời), `--timeout` (ms cho mỗi lần mở trang/điền
+form, mặc định 15000), `--headed` (mở cửa sổ trình duyệt để xem), `--name/--website/--comment`
+(giá trị cố định thay vì sinh ngẫu nhiên), `--yes` (bỏ qua bước xác nhận — chỉ nên dùng
+khi tự động hoá script của chính mình).
+
+Trước khi mở trình duyệt, tool tự kiểm tra `--url` có phản hồi được không (fail nhanh với
+gợi ý cụ thể nếu server chưa chạy/sai port) và, khi điền form, kiểm tra trang có đúng
+`#commentform` không trước khi bấm gửi — nên lỗi thường gặp (quên `npm start`, sai path)
+sẽ báo rõ nguyên nhân thay vì chỉ hiện timeout thô của Playwright.
 
 An toàn có chủ đích:
 - Mặc định **luôn dừng lại chờ gõ `y`** trước khi gửi bất kỳ request thật nào.

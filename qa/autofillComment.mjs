@@ -17,6 +17,7 @@ function parseArgs(argv) {
     url: "http://localhost:3000/demo/bai-viet-mau",
     count: 5,
     delayMs: 1200,
+    timeoutMs: 15000,
     headed: false,
     yes: false,
     iOwnThisSite: false,
@@ -31,6 +32,7 @@ function parseArgs(argv) {
       case "--url": args.url = next(); break;
       case "--count": args.count = Number.parseInt(next(), 10); break;
       case "--delay": args.delayMs = Number.parseInt(next(), 10); break;
+      case "--timeout": args.timeoutMs = Number.parseInt(next(), 10); break;
       case "--headed": args.headed = true; break;
       case "--yes": args.yes = true; break;
       case "--i-own-this-site": args.iOwnThisSite = true; break;
@@ -60,6 +62,7 @@ Options:
   --url <url>          Trang bài viết cần test (mặc định: http://localhost:3000/demo/bai-viet-mau)
   --count <n>          Số lượt gửi bình luận (mặc định: 5)
   --delay <ms>         Khoảng nghỉ giữa các lượt gửi, tuần tự (mặc định: 1200)
+  --timeout <ms>       Timeout cho mỗi lần mở trang / điền form (mặc định: 15000)
   --headed             Mở cửa sổ trình duyệt để quan sát (mặc định: headless)
   --name <text>        Giá trị cố định cho ô Name (mặc định: sinh ngẫu nhiên mỗi lượt)
   --website <url>      Giá trị cố định cho ô Website
@@ -88,6 +91,47 @@ async function confirm(message) {
   const answer = await rl.question(`${message} (gõ "y" để tiếp tục): `);
   rl.close();
   return answer.trim().toLowerCase() === "y";
+}
+
+// Quick HTTP check before even opening a browser, so a down/wrong server
+// fails fast with a clear message instead of a cryptic Playwright timeout
+// after the browser has already launched.
+async function preflightCheck(url, timeoutMs) {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    if (!res.ok) {
+      console.error(`Cảnh báo: ${url} trả về HTTP ${res.status}. Có thể sai đường dẫn trang bài viết.`);
+    }
+    return true;
+  } catch (err) {
+    console.error(`Không kết nối được tới ${url}\n  → ${err.message}`);
+    console.error(
+      `Kiểm tra: (1) server đã chạy chưa — mở terminal khác, cd vào thư mục project, chạy "npm start"; ` +
+      `(2) --url đúng port/path chưa (mặc định server chạy ở cổng 3000, trang demo ở /demo/bai-viet-mau); ` +
+      `(3) nếu trỏ sang máy/host khác, host đó có đang lắng nghe và không bị tường lửa chặn không.`
+    );
+    return false;
+  }
+}
+
+// Turns a raw Playwright error into an actionable Vietnamese message instead
+// of the default multi-line stack, which buries the actual cause.
+function friendlyError(err, url) {
+  const msg = err.message || String(err);
+  if (/ECONNREFUSED|ERR_CONNECTION_REFUSED/i.test(msg)) {
+    return `Kết nối bị từ chối tới ${url} — server chưa chạy hoặc sai port. Chạy "npm start" ở terminal khác rồi thử lại.`;
+  }
+  if (/ERR_NAME_NOT_RESOLVED|ENOTFOUND/i.test(msg)) {
+    return `Không phân giải được host trong "${url}" — kiểm tra lại chính tả URL.`;
+  }
+  if (/Timeout .*exceeded/i.test(msg) && /goto/i.test(msg)) {
+    return `Mở trang "${url}" quá lâu không phản hồi (vượt --timeout). Server có bị treo không, hoặc thử tăng --timeout.`;
+  }
+  if (/locator\('#comment'\)/.test(msg) || /locator\('#commentform'\)/.test(msg)) {
+    return `Không tìm thấy biểu mẫu bình luận (#commentform/#comment) trên trang "${url}". Trang tải được nhưng không ` +
+      `phải trang bài viết có form này — kiểm tra lại --url (ví dụ phải trỏ vào .../demo/bai-viet-mau, không phải trang gốc "/").`;
+  }
+  return msg;
 }
 
 async function main() {
@@ -124,6 +168,9 @@ async function main() {
   console.log(`Chỉ điền: comment / name / website — KHÔNG điền email, KHÔNG tick ô "lưu thông tin".`);
   console.log(`Ví dụ nội dung lượt #1:`, payloads[0]);
 
+  const reachable = await preflightCheck(args.url, args.timeoutMs);
+  if (!reachable) process.exit(1);
+
   if (!args.yes) {
     const ok = await confirm("\nXác nhận tiến hành điền & gửi các bình luận trên");
     if (!ok) {
@@ -134,6 +181,8 @@ async function main() {
 
   const browser = await chromium.launch({ headless: !args.headed });
   const page = await browser.newPage();
+  page.setDefaultTimeout(args.timeoutMs);
+  page.setDefaultNavigationTimeout(args.timeoutMs);
   const results = [];
 
   try {
@@ -142,6 +191,12 @@ async function main() {
       const start = performance.now();
       try {
         await page.goto(args.url, { waitUntil: "domcontentloaded" });
+
+        const formCount = await page.locator("#commentform").count();
+        if (formCount === 0) {
+          throw new Error(`locator('#commentform') not found on page (title: "${await page.title()}")`);
+        }
+
         await page.fill("#comment", payload.comment);
         await page.fill("#author", payload.author);
         await page.fill("#url", payload.website);
@@ -154,8 +209,9 @@ async function main() {
         console.log(`[${i + 1}/${payloads.length}] ${ok ? "OK" : "FAILED"} — ${latencyMs.toFixed(0)}ms — ${page.url()}`);
       } catch (err) {
         const latencyMs = performance.now() - start;
-        results.push({ index: i, success: false, latencyMs, error: err.message });
-        console.log(`[${i + 1}/${payloads.length}] ERROR — ${err.message}`);
+        const friendly = friendlyError(err, args.url);
+        results.push({ index: i, success: false, latencyMs, error: friendly });
+        console.log(`[${i + 1}/${payloads.length}] ERROR — ${friendly}`);
       }
 
       if (i < payloads.length - 1) await sleep(args.delayMs);
