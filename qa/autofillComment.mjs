@@ -17,7 +17,7 @@ function parseArgs(argv) {
     url: "http://localhost:3000/demo/bai-viet-mau",
     count: 5,
     delayMs: 1200,
-    timeoutMs: 15000,
+    timeoutMs: 50000,
     headed: false,
     yes: false,
     iOwnThisSite: false,
@@ -62,7 +62,7 @@ Options:
   --url <url>          Trang bài viết cần test (mặc định: http://localhost:3000/demo/bai-viet-mau)
   --count <n>          Số lượt gửi bình luận (mặc định: 5)
   --delay <ms>         Khoảng nghỉ giữa các lượt gửi, tuần tự (mặc định: 1200)
-  --timeout <ms>       Timeout cho mỗi lần mở trang / điền form (mặc định: 15000)
+  --timeout <ms>       Timeout cho mỗi lần mở trang / điền form (mặc định: 50000)
   --headed             Mở cửa sổ trình duyệt để quan sát (mặc định: headless)
   --name <text>        Giá trị cố định cho ô Name (mặc định: sinh ngẫu nhiên mỗi lượt)
   --website <url>      Giá trị cố định cho ô Website
